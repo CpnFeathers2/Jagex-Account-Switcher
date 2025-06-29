@@ -52,6 +52,9 @@
     <data name="ConfigurationsLocation" xml:space="preserve">
         <value>Configurations Location</value>
     </data>
+<data name="KillAll" xml:space="preserve">
+  <value>Kill All</value>
+</data>
     <data name="ConfigurationsPathWatermark" xml:space="preserve">
         <value>Path to store configurations</value>
     </data>

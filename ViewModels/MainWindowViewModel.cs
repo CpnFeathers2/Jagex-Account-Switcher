@@ -18,7 +18,7 @@ namespace JagexAccountSwitcher.ViewModels
         public AccountOverviewViewModel AccountOverviewViewModel { get; set; }
         public LandingPageViewModel LandingPageViewModel { get; set; }
         public SettingsViewModel SettingsViewModel { get; set; }
-        public MassAccountHandlerViewModel MassAccountHandlerViewModel { get; set; }
+        public MassAccountHandlerViewModel MassAccountHandler { get; set; }
 	public ObservableCollection<RunescapeAccount> Accounts { get; } = new();
 	public AccountOverviewViewModel? AccountOverview { get; private set; }
 
@@ -42,7 +42,8 @@ namespace JagexAccountSwitcher.ViewModels
             AccountOverviewViewModel = new AccountOverviewViewModel(_settings);
             LandingPageViewModel = new LandingPageViewModel();
             SettingsViewModel = new SettingsViewModel(window.StorageProvider, _settings);
-            MassAccountHandlerViewModel = new MassAccountHandlerViewModel(AccountOverviewViewModel, _settings, Accounts);
+	    AccountOverview = new AccountOverviewViewModel(_settings);
+            MassAccountHandler = new MassAccountHandlerViewModel(AccountOverview, _settings);
             ChangeViewCommand = new RelayCommand<string>(ChangeView);
             _viewInstances = new Dictionary<string, object>();
             ChangeView("LandingPage");
@@ -69,7 +70,7 @@ namespace JagexAccountSwitcher.ViewModels
             view = new Settings(SettingsViewModel);
             break;
         case "MassAccountHandler":
-            view = new MassAccountHandler(MassAccountHandlerViewModel);
+            view = new MassAccountHandler(this.MassAccountHandler);
             break;
         default:
             view = new LandingPage();

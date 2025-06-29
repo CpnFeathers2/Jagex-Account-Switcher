@@ -75,5 +75,9 @@
                       Margin="15,0,0,0"
                       VerticalAlignment="Center"/>
         </StackPanel>
+
+    <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+    <Button Content="{l:Localize KillAll}" Command="{Binding KillAllCommand}" Padding="20,10" Background="DarkRed" Foreground="White"/>
+</StackPanel>
     </Grid>
 </UserControl>

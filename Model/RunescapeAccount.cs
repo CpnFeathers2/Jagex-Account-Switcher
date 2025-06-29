@@ -7,6 +7,9 @@ public class RunescapeAccount : INotifyPropertyChanged
     private bool _isActiveAccount;
     public string AccountName { get; set; }
     public string FilePath { get; set; }
+
+    public string AccessToken { get; set; }  
+    public string RefreshToken { get; set; } 
     
     private string? _clientArguments { get; set; }
     

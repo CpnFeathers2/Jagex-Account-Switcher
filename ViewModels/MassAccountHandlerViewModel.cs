@@ -21,8 +21,7 @@ namespace JagexAccountSwitcher.ViewModels
     {
         private readonly AccountOverviewViewModel _viewModel;
         private readonly UserSettings _settings;
-        private readonly ObservableCollection<RunescapeAccount> _accounts;
-        
+        private CancellationTokenSource _startAllCancellationToken;
         private ObservableCollection<MassAccountLinkerModel> _accountProcesses;
         private int _updateDelay = 1000;
         private bool _showClientOutput;
@@ -37,7 +36,7 @@ namespace JagexAccountSwitcher.ViewModels
             }
         }
 
-        public ObservableCollection<RunescapeAccount> Accounts => _accounts;
+        public ObservableCollection<RunescapeAccount> Accounts => _viewModel.Accounts;
 
         public int UpdateDelay
         {
@@ -75,6 +74,7 @@ namespace JagexAccountSwitcher.ViewModels
 
         public ICommand StartAllCommand { get; }
         public ICommand KillClientCommand { get; }
+	public ICommand KillAllCommand { get; }
         public ICommand StartClientCommand { get; }
 
         // Parameterless constructor for design-time support
@@ -83,28 +83,28 @@ namespace JagexAccountSwitcher.ViewModels
             // Initialize with empty/default values for design-time
             _viewModel = null;
             _settings = null;
-            _accounts = new ObservableCollection<RunescapeAccount>();
             _accountProcesses = new ObservableCollection<MassAccountLinkerModel>();
             
             // Initialize commands with empty actions for design-time
             StartAllCommand = new RelayCommand(() => { });
             KillClientCommand = new JagexAccountSwitcher.Helpers.RelayCommand<MassAccountLinkerModel>(_ => { });
             StartClientCommand = new JagexAccountSwitcher.Helpers.RelayCommand<MassAccountLinkerModel>(_ => { });
+	    KillAllCommand = new RelayCommand(() => { });
         }
 
-        public MassAccountHandlerViewModel(AccountOverviewViewModel overviewVm, UserSettings settings, ObservableCollection<RunescapeAccount> accounts)
+
+	// runtime constructor?
+        public MassAccountHandlerViewModel(AccountOverviewViewModel overviewVm, UserSettings settings)
         {
             // Debug output
             System.Diagnostics.Debug.WriteLine($"MassAccountHandlerViewModel constructor called:");
             System.Diagnostics.Debug.WriteLine($"  overviewVm: {overviewVm != null}");
             System.Diagnostics.Debug.WriteLine($"  overviewVm.Accounts count: {overviewVm?.Accounts?.Count ?? 0}");
             System.Diagnostics.Debug.WriteLine($"  settings: {settings != null}");
-            System.Diagnostics.Debug.WriteLine($"  accounts count: {accounts?.Count ?? 0}");
 
             // Initialize dependencies
             _viewModel = overviewVm ?? throw new ArgumentNullException(nameof(overviewVm));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _accounts = accounts ?? throw new ArgumentNullException(nameof(accounts));
 
             // Initialize collections
             _accountProcesses = new ObservableCollection<MassAccountLinkerModel>();
@@ -113,6 +113,7 @@ namespace JagexAccountSwitcher.ViewModels
             StartAllCommand = new RelayCommand(StartAllAccounts);
             KillClientCommand = new JagexAccountSwitcher.Helpers.RelayCommand<MassAccountLinkerModel>(KillClient);
             StartClientCommand = new JagexAccountSwitcher.Helpers.RelayCommand<MassAccountLinkerModel>(StartClient);
+	    KillAllCommand = new RelayCommand(KillAllClients);
 
 #if WINDOWS
             // Initialize ShowClientOutput based on current console state
@@ -165,8 +166,30 @@ namespace JagexAccountSwitcher.ViewModels
             }
         }
 
+private void KillAllClients()
+{
+    // First, cancel any ongoing StartAll operation
+    _startAllCancellationToken?.Cancel();
+    
+    // Then kill all running processes
+    foreach (var model in AccountProcesses)
+    {
+        if (model.Process != null && !model.Process.HasExited)
+        {
+            ProcessHelper.KillClient(model);
+        }
+    }
+}
+
+
         private void StartClient(MassAccountLinkerModel model)
         {
+
+Debug.WriteLine($"StartClient called for: {model?.Account?.AccountName}");
+Debug.WriteLine($"MicroBotJarPath: {_settings?.MicroBotJarPath}");
+Debug.WriteLine($"ClientArguments: {model?.Account?.ClientArguments}");
+Debug.WriteLine($"Process Exists: {model?.Process != null && !model.Process.HasExited}");
+
             if (model == null || _settings == null || string.IsNullOrWhiteSpace(_settings.MicroBotJarPath))
                 return;
 
@@ -174,7 +197,16 @@ namespace JagexAccountSwitcher.ViewModels
             if (model.Process != null && !model.Process.HasExited)
                 return;
 
-            if (RuneliteHelper.SetActiveAccount(model.Account, _viewModel.Accounts, _settings.ConfigurationsPath, _settings.RunelitePath))
+var result = RuneliteHelper.SetActiveAccount(
+    model.Account,
+    _viewModel.Accounts,
+    _settings.ConfigurationsPath,
+    _settings.RunelitePath
+);
+Debug.WriteLine($"SetActiveAccount (StartClient) returned {result} for account: {model.Account?.AccountName}");
+
+
+            if (result)
             {
                 var startInfo = new ProcessStartInfo
                 {
@@ -223,90 +255,107 @@ namespace JagexAccountSwitcher.ViewModels
             }
         }
 
-        private async void StartAllAccounts()
+private async void StartAllAccounts()
+{
+    // Cancel any existing start all operation
+    _startAllCancellationToken?.Cancel();
+    _startAllCancellationToken = new CancellationTokenSource();
+    
+    if (_settings == null || string.IsNullOrWhiteSpace(_settings.MicroBotJarPath) || _viewModel?.Accounts == null)
+        return;
+        
+    try
+    {
+        foreach (var account in _viewModel.Accounts)
         {
-            if (_settings == null || string.IsNullOrWhiteSpace(_settings.MicroBotJarPath) || _viewModel?.Accounts == null)
-                return;
-
-            foreach (var account in _viewModel.Accounts)
+            // Check for cancellation at the start of each iteration
+            _startAllCancellationToken.Token.ThrowIfCancellationRequested();
+            
+            // Skip if already running
+            if (AccountProcesses.Any(x => x.Account == account && x.Process != null && !x.Process.HasExited))
+                continue;
+                
+            var model = AccountProcesses.FirstOrDefault(x => x.Account == account);
+            if (model == null)
+                continue;
+                
+            var result = RuneliteHelper.SetActiveAccount(
+                model.Account,
+                _viewModel.Accounts,
+                _settings.ConfigurationsPath,
+                _settings.RunelitePath
+            );
+            
+            Debug.WriteLine($"SetActiveAccount (StartAll) returned {result} for account: {model.Account?.AccountName}");
+            
+            if (result)
             {
-                // Check if the account is already running
-                if (AccountProcesses.Any(x => x.Account == account && x.Process != null && !x.Process.HasExited))
-                {
-                    continue;
-                }
-
-                if (RuneliteHelper.SetActiveAccount(account, _viewModel.Accounts, _settings.ConfigurationsPath, _settings.RunelitePath))
-                {
-                    var startInfo = new ProcessStartInfo
-                    {
-                        FileName = "javaw.exe",
-                        Arguments = $"-jar \"{_settings.MicroBotJarPath}\" {account.ClientArguments}",
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        CreateNoWindow = true
-                    };
-
-                    var process = new Process { StartInfo = startInfo };
-
-                    var model = AccountProcesses.FirstOrDefault(x => x.Account == account);
-                    if (model != null)
-                    {
-                        var hasFullyLoaded = false;
-
-                        process.OutputDataReceived += (sender, args) =>
-                        {
-                            if (args.Data?.Contains("Client initialization took") == true)
-                            {
-                                hasFullyLoaded = true;
-                            }
-
+                // Check for cancellation before starting process
+                _startAllCancellationToken.Token.ThrowIfCancellationRequested();
+                
+                Debug.WriteLine($"Launching account: {model.Account.AccountName}");
+                  var startInfo = new ProcessStartInfo
+            {
+                FileName = "javaw.exe",
+                Arguments = $"-jar \"{_settings.MicroBotJarPath}\" {model.Account.ClientArguments}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            var process = new Process { StartInfo = startInfo };
+            var hasFullyLoaded = false;
+            process.OutputDataReceived += (sender, args) =>
+            {
+                if (args.Data?.Contains("Client initialization took") == true)
+                    hasFullyLoaded = true;
 #if WINDOWS
-                            if (!string.IsNullOrEmpty(args.Data) && ShowClientOutput)
+                if (!string.IsNullOrEmpty(args.Data) && ShowClientOutput)
 #else
-                            if (!string.IsNullOrEmpty(args.Data) && ConsoleHelper.IsConsoleVisible())
+                if (!string.IsNullOrEmpty(args.Data) && ConsoleHelper.IsConsoleVisible())
 #endif
-                                Console.WriteLine($"[{account.AccountName}] {args.Data}");
-                        };
-
-                        process.ErrorDataReceived += (sender, args) =>
-                        {
+                    Console.WriteLine($"[{model.Account.AccountName}] {args.Data}");
+            };
+            process.ErrorDataReceived += (sender, args) =>
+            {
 #if WINDOWS
-                            if (!string.IsNullOrEmpty(args.Data) && ShowClientOutput)
+                if (!string.IsNullOrEmpty(args.Data) && ShowClientOutput)
 #else
-                            if (!string.IsNullOrEmpty(args.Data) && ConsoleHelper.IsConsoleVisible())
+                if (!string.IsNullOrEmpty(args.Data) && ConsoleHelper.IsConsoleVisible())
 #endif
-                                Console.WriteLine($"[{account.AccountName}] ERROR: {args.Data}");
-                        };
-
-                        process.Start();
-                        process.BeginOutputReadLine();
-                        process.BeginErrorReadLine();
-
-                        Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            model.Process = process;
-                            model.ProcessLifetime = $"Runtime: {DateTime.Now - process.StartTime:hh\\:mm\\:ss}";
-                        });
-
-                        // Wait for the client to fully load
-                        var loadingTask = Task.Run(async () =>
-                        {
-                            while (!hasFullyLoaded && !process.HasExited)
-                            {
-                                Console.WriteLine("Waiting for account to fully load...");
-                                await Task.Delay(1000);
-                            }
-                        });
-
-                        await loadingTask;
+                    Console.WriteLine($"[{model.Account.AccountName}] ERROR: {args.Data}");
+            };
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                model.Process = process;
+                model.ProcessLifetime = $"Runtime: {DateTime.Now - process.StartTime:hh\\:mm\\:ss}";
+            });
+                
+                var loadingTask = Task.Run(async () =>
+                {
+                    while (!hasFullyLoaded && !process.HasExited)
+                    {
+                        // Check for cancellation during loading wait
+                        _startAllCancellationToken.Token.ThrowIfCancellationRequested();
+                        
+                        Debug.WriteLine($"Waiting for {model.Account.AccountName} to fully load...");
+                        await Task.Delay(1000, _startAllCancellationToken.Token);
                     }
-
-                    RuneliteHelper.SaveAccounts(_viewModel.Accounts, _settings.ConfigurationsPath);
-                }
+                }, _startAllCancellationToken.Token);
+                
+                await loadingTask;
+                RuneliteHelper.SaveAccounts(_viewModel.Accounts, _settings.ConfigurationsPath);
             }
         }
+    }
+    catch (OperationCanceledException)
+    {
+        Debug.WriteLine("StartAll operation was cancelled");
+    }
+}
 
         private async Task UpdateProcessLifetimes()
         {
