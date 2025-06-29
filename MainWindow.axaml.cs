@@ -8,6 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Collections.Generic;
+using System;
+using MessageBox.Avalonia;
 
 namespace JagexAccountSwitcher;
 
