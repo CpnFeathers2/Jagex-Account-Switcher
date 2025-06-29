@@ -37,8 +37,7 @@ public partial class MainWindow : Window
 
         Console.WriteLine("Refresh button clicked!"); 
         string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configurations");
-        Console.WriteLine($"Looking for: {configPath}"); 
-        string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configurations");
+        Console.WriteLine($"Looking for: {configPath}");
 
         if (!Directory.Exists(configPath))
         {
