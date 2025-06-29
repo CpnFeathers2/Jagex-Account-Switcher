@@ -10,6 +10,8 @@ using System.Text.Json;
 using System.Collections.Generic;
 using System;
 using MessageBox.Avalonia;
+using JagexAccountSwitcher.Model;
+using JagexAccountSwitcher.Helpers;
 
 namespace JagexAccountSwitcher;
 
