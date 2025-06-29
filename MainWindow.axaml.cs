@@ -4,6 +4,10 @@ using Avalonia.Input;
 using Avalonia.Platform;
 using Avalonia.Interactivity;
 using JagexAccountSwitcher.ViewModels;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Collections.Generic;
 
 namespace JagexAccountSwitcher;
 
