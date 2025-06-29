@@ -55,10 +55,10 @@ public partial class MainWindow : Window
             string rsn = usernameLine.Split('=')[1].Trim();
             string relativePath = Path.Combine(Path.GetFileName(dir), "credentials.properties").Replace("\\", "/");
 
-           accounts.Add(new RunescapeAccount
-           {
-                rsn = rsn,
-                game = "RUNESCAPE"
+       accounts.Add(new RunescapeAccount
+            {
+            AccountName = rsn,
+            FilePath = relativePath
            });
         }
 
