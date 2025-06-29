@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Collections.Generic;
 using System;
-using MessageBox.Avalonia;
+using MsBox.Avalonia;
 using JagexAccountSwitcher.Model;
 using JagexAccountSwitcher.Helpers;
 
@@ -39,7 +39,7 @@ public partial class MainWindow : Window
 
         if (!Directory.Exists(configPath))
         {
-            await MessageBoxManager.GetMessageBoxStandardWindow("Warning", "Configurations folder not found.").ShowDialog(this);
+            await MessageBox.Avalonia.MessageBoxManager.GetMessageBoxStandardWindow("Warning", "Configurations folder not found.").ShowDialog(this);
             return;
         }
 
@@ -68,6 +68,6 @@ public partial class MainWindow : Window
         string jsonPath = Path.Combine(configPath, "accounts.json");
         File.WriteAllText(jsonPath, JsonSerializer.Serialize(accounts, new JsonSerializerOptions { WriteIndented = true }));
 
-        await MessageBoxManager.GetMessageBoxStandardWindow("Success", "accounts.json updated successfully!").ShowDialog(this);
+        await MessageBox.Avalonia.MessageBoxManager.GetMessageBoxStandardWindow("Success", "accounts.json updated successfully!").ShowDialog(this);
     }
 }
