@@ -41,16 +41,26 @@ public partial class MainWindow : Window
 
         if (!Directory.Exists(configPath))
         {
+            Console.WriteLine("Directory doesn't exist!");
             return;
         }
+        
+            var directories = Directory.GetDirectories(configPath);
+            Console.WriteLine($"Found {directories.Length} directories");
 
         var accounts = new List<RunescapeAccount>();
         
         foreach (var dir in Directory.GetDirectories(configPath))
         {
+            Console.WriteLine($"Checking directory: {dir}");
             string credPath = Path.Combine(dir, "credentials.properties");
-            if (!File.Exists(credPath)) continue;
-
+            Console.WriteLine($"Looking for credentials at: {credPath}");
+            if (!File.Exists(credPath)) 
+            {
+            Console.WriteLine("Credentials file not found, skipping");
+            continue;
+            }
+            Console.WriteLine("Found credentials file, processing...");
             var lines = File.ReadAllLines(credPath);
             var usernameLine = lines.FirstOrDefault(l => l.StartsWith("username="));
             if (usernameLine == null) continue;
@@ -64,7 +74,7 @@ public partial class MainWindow : Window
             FilePath = relativePath
            });
         }
-
+        Console.WriteLine($"Total accounts found: {accounts.Count}");
         string jsonPath = Path.Combine(configPath, "accounts.json");
         File.WriteAllText(jsonPath, JsonSerializer.Serialize(accounts, new JsonSerializerOptions { WriteIndented = true }));
     }
