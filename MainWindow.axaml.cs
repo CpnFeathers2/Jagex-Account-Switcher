@@ -34,6 +34,10 @@ public partial class MainWindow : Window
     }
      private async void RefreshConfigurations_Click(object? sender, RoutedEventArgs e)
     {
+
+        Console.WriteLine("Refresh button clicked!"); 
+        string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configurations");
+        Console.WriteLine($"Looking for: {configPath}"); 
         string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configurations");
 
         if (!Directory.Exists(configPath))
