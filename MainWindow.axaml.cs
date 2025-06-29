@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System;
 using JagexAccountSwitcher.Model;
 using JagexAccountSwitcher.Helpers;
+using System.Reflection;
 
 namespace JagexAccountSwitcher;
 
@@ -32,50 +33,99 @@ public partial class MainWindow : Window
     {
         BeginMoveDrag(e);
     }
-     private async void RefreshConfigurations_Click(object? sender, RoutedEventArgs e)
+
+private async void RefreshConfigurations_Click(object? sender, RoutedEventArgs e)
+{
+    Console.WriteLine("Refresh button clicked!");
+    string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configurations");
+    Console.WriteLine($"Looking for: {configPath}");
+
+    if (!Directory.Exists(configPath))
     {
-
-        Console.WriteLine("Refresh button clicked!"); 
-        string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configurations");
-        Console.WriteLine($"Looking for: {configPath}");
-
-        if (!Directory.Exists(configPath))
-        {
-            Console.WriteLine("Directory doesn't exist!");
-            return;
-        }
-        
-            var directories = Directory.GetDirectories(configPath);
-            Console.WriteLine($"Found {directories.Length} directories");
-
-        var accounts = new List<RunescapeAccount>();
-        
-        foreach (var dir in Directory.GetDirectories(configPath))
-        {
-            Console.WriteLine($"Checking directory: {dir}");
-            string credPath = Path.Combine(dir, "credentials.properties");
-            Console.WriteLine($"Looking for credentials at: {credPath}");
-            if (!File.Exists(credPath)) 
-            {
-            Console.WriteLine("Credentials file not found, skipping");
-            continue;
-            }
-            Console.WriteLine("Found credentials file, processing...");
-            var lines = File.ReadAllLines(credPath);
-            var usernameLine = lines.FirstOrDefault(l => l.StartsWith("username="));
-            if (usernameLine == null) continue;
-
-            string rsn = usernameLine.Split('=')[1].Trim();
-            string relativePath = Path.Combine(Path.GetFileName(dir), "credentials.properties").Replace("\\", "/");
-
-       accounts.Add(new RunescapeAccount
-            {
-            AccountName = rsn,
-            FilePath = relativePath
-           });
-        }
-        Console.WriteLine($"Total accounts found: {accounts.Count}");
-        string jsonPath = Path.Combine(configPath, "accounts.json");
-        File.WriteAllText(jsonPath, JsonSerializer.Serialize(accounts, new JsonSerializerOptions { WriteIndented = true }));
+        Console.WriteLine("Directory doesn't exist!");
+        return;
     }
+
+    var credentialsFiles = Directory.GetFiles(configPath, "credentials.properties*")
+        .Where(f => !f.EndsWith("accounts.json"))
+        .ToArray();
+
+    Console.WriteLine($"Found {credentialsFiles.Length} credentials files");
+
+    var accounts = new List<RunescapeAccount>();
+
+    foreach (var credFile in credentialsFiles)
+    {
+        Console.WriteLine($"\nProcessing file: {Path.GetFileName(credFile)}");
+
+        try
+        {
+            var lines = File.ReadAllLines(credFile);
+            Console.WriteLine($"File has {lines.Length} lines");
+
+            var displayNameLine = lines.FirstOrDefault(l => l.StartsWith("JX_DISPLAY_NAME="));
+
+            if (displayNameLine == null)
+            {
+                Console.WriteLine($"No JX_DISPLAY_NAME found in {Path.GetFileName(credFile)}, skipping");
+                continue;
+            }
+
+            string displayName = displayNameLine.Split('=')[1].Trim();
+
+            if (string.IsNullOrEmpty(displayName) || displayName == "Not set")
+            {
+                Console.WriteLine($"Display name is empty or 'Not set' in {Path.GetFileName(credFile)}, skipping");
+                continue;
+            }
+
+            Console.WriteLine($"Found display name: {displayName}");
+
+            string fileName = Path.GetFileName(credFile);
+
+            accounts.Add(new RunescapeAccount
+            {
+                AccountName = displayName,
+                FilePath = fileName
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error processing {Path.GetFileName(credFile)}: {ex.Message}");
+        }
+    }
+
+    Console.WriteLine($"Total accounts found: {accounts.Count}");
+
+    try
+    {
+        string jsonPath = Path.Combine(configPath, "accounts.json");
+        string json = JsonSerializer.Serialize(accounts, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(jsonPath, json);
+        Console.WriteLine($"Accounts saved to: {jsonPath}");
+
+        // UPDATE THE UI - Directly update AccountOverviewViewModel
+        if (DataContext is MainWindowViewModel mainViewModel &&
+            mainViewModel.AccountOverview is AccountOverviewViewModel overview)
+        {
+            Console.WriteLine("Updating UI via AccountOverviewViewModel...");
+
+            overview.Accounts.Clear();
+            foreach (var account in accounts)
+            {
+                overview.Accounts.Add(account);
+            }
+
+            Console.WriteLine($"UI updated with {accounts.Count} accounts");
+        }
+        else
+        {
+            Console.WriteLine("Could not update UI — AccountOverviewViewModel not found");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error saving accounts: {ex.Message}");
+    }
+}
 }

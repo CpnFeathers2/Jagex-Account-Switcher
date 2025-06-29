@@ -5,6 +5,7 @@ using System.Windows.Input;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.Input;
 using JagexAccountSwitcher.Model;
+using System.Collections.ObjectModel;
 using JagexAccountSwitcher.Views;
 
 namespace JagexAccountSwitcher.ViewModels
@@ -18,6 +19,9 @@ namespace JagexAccountSwitcher.ViewModels
         public LandingPageViewModel LandingPageViewModel { get; set; }
         public SettingsViewModel SettingsViewModel { get; set; }
         public MassAccountHandlerViewModel MassAccountHandlerViewModel { get; set; }
+	public ObservableCollection<RunescapeAccount> Accounts { get; } = new();
+	public AccountOverviewViewModel? AccountOverview { get; private set; }
+
         public object CurrentView
         {
             get => _currentView;
@@ -38,7 +42,7 @@ namespace JagexAccountSwitcher.ViewModels
             AccountOverviewViewModel = new AccountOverviewViewModel(_settings);
             LandingPageViewModel = new LandingPageViewModel();
             SettingsViewModel = new SettingsViewModel(window.StorageProvider, _settings);
-            MassAccountHandlerViewModel = new MassAccountHandlerViewModel(AccountOverviewViewModel, _settings);
+            MassAccountHandlerViewModel = new MassAccountHandlerViewModel(AccountOverviewViewModel, _settings, Accounts);
             ChangeViewCommand = new RelayCommand<string>(ChangeView);
             _viewInstances = new Dictionary<string, object>();
             ChangeView("LandingPage");
@@ -47,18 +51,33 @@ namespace JagexAccountSwitcher.ViewModels
         private void ChangeView(string viewName)
         {
             if (!_viewInstances.TryGetValue(viewName, out var view))
-            {
-                view = viewName switch
-                {
-                    "Guide" => new Guide(),
-                    "LandingPage" => new LandingPage(),
-                    "AccountOverview" => new AccountOverview(AccountOverviewViewModel),
-                    "Settings" => new Settings(SettingsViewModel),
-                    "MassAccountHandler" => new MassAccountHandler(MassAccountHandlerViewModel),
-                    _ => new LandingPage()
-                };
-                _viewInstances[viewName] = view;
-            }
+{
+    switch (viewName)
+    {
+        case "AccountOverview":
+    	    var overviewVm = new AccountOverviewViewModel(_settings);
+    	    AccountOverview = overviewVm;
+    	    view = new AccountOverview(overviewVm);
+    	    break;
+        case "LandingPage":
+            view = new LandingPage();
+            break;
+        case "Guide":
+            view = new Guide();
+            break;
+        case "Settings":
+            view = new Settings(SettingsViewModel);
+            break;
+        case "MassAccountHandler":
+            view = new MassAccountHandler(MassAccountHandlerViewModel);
+            break;
+        default:
+            view = new LandingPage();
+            break;
+    }
+
+    _viewInstances[viewName] = view;
+}
 
             CurrentView = view;
         }

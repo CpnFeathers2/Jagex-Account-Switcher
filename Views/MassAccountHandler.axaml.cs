@@ -7,15 +7,19 @@ namespace JagexAccountSwitcher.Views;
 
 public partial class MassAccountHandler : UserControl
 {
+    // Parameterless constructor for XAML instantiation
+    public MassAccountHandler()
+    {
+        InitializeComponent();
+    }
+
+    // Constructor with ViewModel for programmatic instantiation
     public MassAccountHandler(MassAccountHandlerViewModel massAccountHandlerViewModel)
     {
         InitializeComponent();
         DataContext = massAccountHandlerViewModel;
     }
-    public MassAccountHandler()
-    {
-        InitializeComponent();
-    }
+
     private void InitializeComponent()
     {
         AvaloniaXamlLoader.Load(this);
