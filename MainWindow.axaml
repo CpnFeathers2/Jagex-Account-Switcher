@@ -59,6 +59,8 @@
                     <Button Content="{l:Localize Guide}" Margin="8" HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Center" Command="{Binding ChangeViewCommand}"
                             CommandParameter="Guide" />
+                    <Button Content="Refresh Configurations" Click="RefreshConfigurations_Click" Margin="10"/>
+
                 </StackPanel>
             </Border>
 
