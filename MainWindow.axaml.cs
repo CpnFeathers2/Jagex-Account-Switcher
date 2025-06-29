@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform;
+using Avalonia.Interactivity;
 using JagexAccountSwitcher.ViewModels;
 
 namespace JagexAccountSwitcher;
