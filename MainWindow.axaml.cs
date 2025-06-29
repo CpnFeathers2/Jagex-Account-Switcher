@@ -41,8 +41,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        var accounts = new List<JagexAccount>();
-
+        var accounts = new List<RunescapeAccount>();
+        
         foreach (var dir in Directory.GetDirectories(configPath))
         {
             string credPath = Path.Combine(dir, "credentials.properties");
