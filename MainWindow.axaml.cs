@@ -41,6 +41,24 @@ private async void RefreshConfigurations_Click(object? sender, RoutedEventArgs e
     string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configurations");
     string jsonPath = Path.Combine(configPath, "accounts.json");
 
+    // 🔁 Reformat credentials.0001.properties → credentials.properties.0001
+    var configFiles = Directory.GetFiles(configPath, "credentials.*.properties");
+    foreach (var file in configFiles)
+    {
+        var fileName = Path.GetFileName(file);
+        var parts = fileName.Split('.');
+        if (parts.Length == 3 && int.TryParse(parts[1], out var number))
+        {
+            var correctedName = $"credentials.properties.{parts[1]}";
+            var correctedPath = Path.Combine(configPath, correctedName);
+            if (!File.Exists(correctedPath))
+            {
+                File.Move(file, correctedPath);
+                Console.WriteLine($"🔁 Renamed: {fileName} → {correctedName}");
+            }
+        }
+    }
+
     if (!File.Exists(jsonPath))
     {
         Console.WriteLine("No accounts.json file found!");
