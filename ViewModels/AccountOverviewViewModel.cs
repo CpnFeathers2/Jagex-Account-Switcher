@@ -76,7 +76,7 @@ namespace JagexAccountSwitcher.ViewModels
             var creditalsFile = new FileInfo(Path.Combine(_userSettings.RunelitePath, "credentials.properties"));
             if (creditalsFile.Exists)
             {
-                var accountName = CredentialsHelper.GetDisplayName(creditalsFile.FullName);
+                var accountName = CredentialsHelper.GetDisplayNameOrFallback(creditalsFile.FullName);
                 if (Accounts.Any(a => a.AccountName.Equals(accountName, StringComparison.OrdinalIgnoreCase)))
                 {
                     MessageBoxManager.GetMessageBoxStandard("Error", $"{accountName} already exists", ButtonEnum.Ok, Icon.Error, WindowStartupLocation.CenterOwner).ShowAsync();

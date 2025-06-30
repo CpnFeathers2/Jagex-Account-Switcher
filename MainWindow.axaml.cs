@@ -17,9 +17,13 @@ namespace JagexAccountSwitcher;
 
 public partial class MainWindow : Window
 {
+
+  private UserSettings _userSettings;
+
     public MainWindow()
     {
         InitializeComponent();
+_userSettings = new UserSettings();
         ExtendClientAreaToDecorationsHint = true;
         ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.PreferSystemChrome;
         Background = Avalonia.Media.Brushes.Black;
@@ -82,22 +86,50 @@ private async void RefreshConfigurations_Click(object? sender, RoutedEventArgs e
         File.WriteAllText(jsonPath, JsonSerializer.Serialize(accounts, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine("Updated accounts.json with new tokens.");
 
-        // Update the UI (overview)
-        if (DataContext is MainWindowViewModel mainViewModel &&
-            mainViewModel.AccountOverview is AccountOverviewViewModel overview)
-        {
-            overview.Accounts.Clear();
-            foreach (var account in accounts)
-            {
-                overview.Accounts.Add(account);
-            }
+       // Update the UI (overview)
+if (DataContext is MainWindowViewModel mainViewModel &&
+    mainViewModel.AccountOverview is AccountOverviewViewModel overview)
+{
+    var merged = new List<RunescapeAccount>();
 
-            Console.WriteLine($"UI updated with {accounts.Count} accounts.");
-        }
-        else
-        {
-            Console.WriteLine("⚠ Could not update UI — AccountOverviewViewModel not found.");
-        }
+    foreach (var credPath in Directory.GetFiles(configPath, "credentials.properties.*"))
+    {
+        var name = CredentialsHelper.GetDisplayNameOrFallback(credPath);
+
+        var existing = accounts?.FirstOrDefault(a =>
+            string.Equals(a.FilePath, credPath, StringComparison.OrdinalIgnoreCase));
+
+        var account = existing ?? new RunescapeAccount();
+        account.AccountName = name;
+        account.FilePath = credPath;
+
+        merged.Add(account);
+    }
+
+    // Set active account based on the currently active credentials.properties
+    var activeCredPath = Path.Combine(_userSettings.RunelitePath, "credentials.properties");
+    if (File.Exists(activeCredPath))
+    {
+        var activeName = CredentialsHelper.GetDisplayNameOrFallback(activeCredPath);
+        foreach (var acc in merged)
+            acc.IsActiveAccount = acc.AccountName.Equals(activeName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // Save updated list back to file
+    File.WriteAllText(jsonPath, JsonSerializer.Serialize(merged, new JsonSerializerOptions { WriteIndented = true }));
+
+    // Update UI binding
+    overview.Accounts.Clear();
+    foreach (var acc in merged)
+        overview.Accounts.Add(acc);
+
+    Console.WriteLine($"UI refreshed with {merged.Count} account(s).");
+}
+else
+{
+    Console.WriteLine("⚠ Could not update UI — AccountOverviewViewModel not found.");
+}
+
 
         // Optional: If your handler uses another ViewModel, update it here too
         // Example: mainViewModel.MassHandlerViewModel.Accounts = new ObservableCollection<RunescapeAccount>(accounts);
