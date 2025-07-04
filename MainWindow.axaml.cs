@@ -41,10 +41,9 @@ _userSettings = new UserSettings();
 private async void RefreshConfigurations_Click(object? sender, RoutedEventArgs e)
 {
     Console.WriteLine("Refresh button clicked!");
-
     string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configurations");
     string jsonPath = Path.Combine(configPath, "accounts.json");
-
+    
     // 🔁 Reformat credentials.0001.properties → credentials.properties.0001
     var configFiles = Directory.GetFiles(configPath, "credentials.*.properties");
     foreach (var file in configFiles)
@@ -63,48 +62,46 @@ private async void RefreshConfigurations_Click(object? sender, RoutedEventArgs e
         }
     }
 
-    if (!File.Exists(jsonPath))
+    // Load existing accounts from JSON (or create empty list)
+    List<RunescapeAccount> accounts = new List<RunescapeAccount>();
+    if (File.Exists(jsonPath))
     {
-        Console.WriteLine("No accounts.json file found!");
-        return;
+        try
+        {
+            var json = File.ReadAllText(jsonPath);
+            var loadedAccounts = JsonSerializer.Deserialize<List<RunescapeAccount>>(json);
+            if (loadedAccounts != null)
+            {
+                accounts = loadedAccounts;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading JSON: {ex.Message}");
+        }
     }
 
-    try
-    {
-        var json = File.ReadAllText(jsonPath);
-        var accounts = JsonSerializer.Deserialize<List<RunescapeAccount>>(json);
-
-        if (accounts == null || accounts.Count == 0)
-        {
-            Console.WriteLine("No accounts found in accounts.json.");
-            return;
-        }
-
-        Console.WriteLine($"Loaded {accounts.Count} accounts from JSON.");
-
-        // Save updated account list
-        File.WriteAllText(jsonPath, JsonSerializer.Serialize(accounts, new JsonSerializerOptions { WriteIndented = true }));
-        Console.WriteLine("Updated accounts.json with new tokens.");
-
-       // Update the UI (overview)
-if (DataContext is MainWindowViewModel mainViewModel &&
-    mainViewModel.AccountOverview is AccountOverviewViewModel overview)
-{
+    // Build merged account list from credential files
     var merged = new List<RunescapeAccount>();
-
     foreach (var credPath in Directory.GetFiles(configPath, "credentials.properties.*"))
     {
         var name = CredentialsHelper.GetDisplayNameOrFallback(credPath);
-
         var existing = accounts?.FirstOrDefault(a =>
             string.Equals(a.FilePath, credPath, StringComparison.OrdinalIgnoreCase));
-
         var account = existing ?? new RunescapeAccount();
         account.AccountName = name;
         account.FilePath = credPath;
-
         merged.Add(account);
     }
+
+    // Check if we found any credential files
+    if (merged.Count == 0)
+    {
+        Console.WriteLine("No credentials.properties.* files found in Configurations folder.");
+        return;
+    }
+
+    Console.WriteLine($"Found {merged.Count} credential files.");
 
     // Set active account based on the currently active credentials.properties
     var activeCredPath = Path.Combine(_userSettings.RunelitePath, "credentials.properties");
@@ -116,28 +113,28 @@ if (DataContext is MainWindowViewModel mainViewModel &&
     }
 
     // Save updated list back to file
-    File.WriteAllText(jsonPath, JsonSerializer.Serialize(merged, new JsonSerializerOptions { WriteIndented = true }));
-
-    // Update UI binding
-    overview.Accounts.Clear();
-    foreach (var acc in merged)
-        overview.Accounts.Add(acc);
-
-    Console.WriteLine($"UI refreshed with {merged.Count} account(s).");
-}
-else
-{
-    Console.WriteLine("⚠ Could not update UI — AccountOverviewViewModel not found.");
-}
-
-
-        // Optional: If your handler uses another ViewModel, update it here too
-        // Example: mainViewModel.MassHandlerViewModel.Accounts = new ObservableCollection<RunescapeAccount>(accounts);
-
+    try
+    {
+        File.WriteAllText(jsonPath, JsonSerializer.Serialize(merged, new JsonSerializerOptions { WriteIndented = true }));
+        Console.WriteLine("Updated accounts.json with merged data.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Unhandled error: {ex.Message}");
+        Console.WriteLine($"Error saving JSON: {ex.Message}");
+    }
+
+    // Update UI binding
+    if (DataContext is MainWindowViewModel mainViewModel &&
+        mainViewModel.AccountOverview is AccountOverviewViewModel overview)
+    {
+        overview.Accounts.Clear();
+        foreach (var acc in merged)
+            overview.Accounts.Add(acc);
+        Console.WriteLine($"UI refreshed with {merged.Count} account(s).");
+    }
+    else
+    {
+        Console.WriteLine("⚠ Could not update UI — AccountOverviewViewModel not found.");
     }
 }
 }
