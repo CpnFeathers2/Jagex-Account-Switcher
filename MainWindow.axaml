@@ -1,0 +1,59 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:JagexAccountSwitcher.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:JagexAccountSwitcher.Views"
+        xmlns:l="clr-namespace:Jeek.Avalonia.Localization;assembly=Jeek.Avalonia.Localization"
+        mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="400"
+        x:Class="JagexAccountSwitcher.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/icons8-intelligence-64.ico"
+        Title="Jagex Account Switcher"
+        WindowStartupLocation="CenterScreen"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaTitleBarHeightHint="30"
+        Width="700" Height="400">
+
+    <Window.DataTemplates>
+        <DataTemplate DataType="vm:AccountOverviewViewModel">
+            <views:AccountOverview />
+        </DataTemplate>
+        <DataTemplate DataType="vm:LandingPageViewModel">
+            <views:LandingPage />
+        </DataTemplate>
+        <DataTemplate DataType="vm:SettingsViewModel">
+            <views:Settings />
+        </DataTemplate>
+        <DataTemplate DataType="vm:MassAccountHandlerViewModel">
+            <views:MassAccountHandler />
+        </DataTemplate>
+    </Window.DataTemplates>
+
+    <Grid RowDefinitions="30,*">
+        <Grid Grid.Row="0" Background="Black" PointerPressed="TitleBar_PointerPressed">
+            <StackPanel Orientation="Horizontal" Margin="10,0">
+                <Image Source="/Assets/icons8-intelligence-64.ico" Width="16" Height="16" Margin="0,0,5,0"/>
+                <TextBlock Text="Jagex Account Switcher" VerticalAlignment="Center" FontSize="12"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnDefinitions="180,*">
+            <Border Grid.Column="0" BorderBrush="#333333" BorderThickness="0,0,1,0">
+                <StackPanel Background="Black">
+                    <TextBlock Text="NAVIGATION" FontWeight="Bold" Margin="15" TextAlignment="Center" Opacity="0.6"/>
+                    <Button Content="Account Overview" Command="{Binding ChangeViewCommand}" CommandParameter="AccountOverview" Margin="8,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                    <Button Content="Mass Handler" Command="{Binding ChangeViewCommand}" CommandParameter="MassAccountHandler" Margin="8,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                    <Button Content="Settings" Command="{Binding ChangeViewCommand}" CommandParameter="Settings" Margin="8,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                    <Separator Margin="10" Background="#333333"/>
+                    <Button Content="Refresh Folder" Click="RefreshConfigurations_Click" Margin="8,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1">
+                <ContentControl Content="{Binding CurrentView}" />
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

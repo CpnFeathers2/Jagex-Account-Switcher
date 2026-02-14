@@ -1,0 +1,93 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:JagexAccountSwitcher.ViewModels"
+             xmlns:models="clr-namespace:JagexAccountSwitcher.Model"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="JagexAccountSwitcher.Views.MassAccountHandler"
+             x:DataType="vm:MassAccountHandlerViewModel">
+
+    <Grid RowDefinitions="Auto, *, Auto" Background="#121212">
+        
+        <Grid Grid.Row="0" ColumnDefinitions="2*, 1*, 1*, 1*, 1*, 1.5*" Margin="25,20,25,10">
+            <TextBlock Grid.Column="0" Text="ACCOUNT NAME" Foreground="#666666" FontSize="10" FontWeight="Black" LetterSpacing="1.2"/>
+            <TextBlock Grid.Column="1" Text="STATUS" Foreground="#666666" FontSize="10" FontWeight="Black" HorizontalAlignment="Center" LetterSpacing="1.2"/>
+            <TextBlock Grid.Column="2" Text="PID" Foreground="#666666" FontSize="10" FontWeight="Black" HorizontalAlignment="Center" LetterSpacing="1.2"/>
+            <TextBlock Grid.Column="3" Text="LIFETIME" Foreground="#666666" FontSize="10" FontWeight="Black" HorizontalAlignment="Center" LetterSpacing="1.2"/>
+            <TextBlock Grid.Column="4" Text="BREAK LEFT" Foreground="#666666" FontSize="10" FontWeight="Black" HorizontalAlignment="Center" LetterSpacing="1.2"/>
+            <TextBlock Grid.Column="5" Text="ACTIONS" Foreground="#666666" FontSize="10" FontWeight="Black" HorizontalAlignment="Center" LetterSpacing="1.2"/>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" Margin="10,0">
+            <ItemsControl ItemsSource="{Binding AccountProcesses}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:MassAccountLinkerModel">
+                        <Border Background="#1e1e1e" 
+                                BorderBrush="#252525" 
+                                BorderThickness="0,0,0,1" 
+                                Padding="15,10">
+                            <Grid ColumnDefinitions="2*, 1*, 1*, 1*, 1*, 1.5*">
+                                <TextBlock Grid.Column="0" Text="{Binding Account.AccountName}" VerticalAlignment="Center" FontSize="14" Foreground="#eeeeee"/>
+                                <TextBlock Grid.Column="1" Text="{Binding StatusDisplay}" Foreground="{Binding StatusColor}" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="{Binding ProcessIdDisplay}" Foreground="#666" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="{Binding Lifetime}" Foreground="#aaa" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="4" Text="{Binding BreakTimer}" Foreground="#ff9f43" FontWeight="Bold" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                
+                                <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
+                                    <Button Content="START" 
+                                            Command="{Binding $parent[UserControl].((vm:MassAccountHandlerViewModel)DataContext).StartClientCommand}" 
+                                            CommandParameter="{Binding}"
+                                            IsVisible="{Binding IsNotRunning}"
+                                            Background="#27ae60" Foreground="White" Width="85" Height="32"
+                                            HorizontalContentAlignment="Center" FontWeight="Black" FontSize="11"/>
+                                    <Button Content="KILL" 
+                                            Command="{Binding $parent[UserControl].((vm:MassAccountHandlerViewModel)DataContext).KillClientCommand}" 
+                                            CommandParameter="{Binding}"
+                                            IsVisible="{Binding IsRunning}"
+                                            Background="#c0392b" Foreground="White" Width="85" Height="32"
+                                            HorizontalContentAlignment="Center" FontWeight="Black" FontSize="11"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="#1a1a1a" BorderBrush="#333" BorderThickness="0,1,0,0" Padding="15,10">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="15">
+                    <Button Content="START ALL" Command="{Binding StartAllCommand}" Background="#2ecc71" Foreground="White" Padding="20,8" FontWeight="Black"/>
+                    <Button Content="KILL ALL" Command="{Binding KillAllCommand}" Background="#e74c3c" Foreground="White" Padding="20,8" FontWeight="Black"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10" Margin="10,0">
+                        <TextBlock Text="DELAY:" VerticalAlignment="Center" Foreground="#555" FontWeight="Bold" FontSize="10"/>
+                        <NumericUpDown Value="{Binding StartAllLaunchDelay}" Minimum="1000" Maximum="900000" Width="150" Height="32"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Orientation="Horizontal" Spacing="20">
+    <!-- Active Accounts -->
+    <StackPanel Orientation="Horizontal" Spacing="10">
+        <Border Background="#27ae60" CornerRadius="5" Width="10" Height="10" VerticalAlignment="Center"/>
+        <TextBlock Text="{Binding ActiveAccountsDisplay}" 
+                   Foreground="#27ae60" 
+                   FontWeight="ExtraBold" 
+                   FontSize="13" 
+                   VerticalAlignment="Center"/>
+    </StackPanel>
+    
+    <!-- Total Accounts -->
+    <StackPanel Orientation="Horizontal" Spacing="10">
+        <Border Background="#3498db" CornerRadius="5" Width="10" Height="10" VerticalAlignment="Center"/>
+        <TextBlock Text="{Binding TotalAccountsDisplay}" 
+                   Foreground="#3498db" 
+                   FontWeight="ExtraBold" 
+                   FontSize="13" 
+                   VerticalAlignment="Center"/>
+    </StackPanel>
+</StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

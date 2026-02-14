@@ -1,0 +1,9 @@
+*.Designer.cs
+*.g.cs
+*.g.i.cs
+bin/
+obj/
+.vs/
+.git/
+*.user
+*.suo
